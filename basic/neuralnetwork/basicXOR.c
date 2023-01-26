@@ -233,45 +233,13 @@ int main() {
     printf("\n");
 
     // training step
-    int epoch = 1000;
+    int epoch = 7;
     double learningRate = 0.1;
 
     printf("STEP_2: Begin training...\n");
     printf("---------------\n");
 
     for (int i = 0; i < epoch; i++) {
-
-        double weightsHiddenToOutputsDelta[numHidden][numOutputs];
-
-        // initialize weightsHiddenToOutputsDelta to 0
-        for (int j = 0; j < numHidden; j++) {
-            for (int k = 0; k < numOutputs; k++) {
-                weightsHiddenToOutputsDelta[j][k] = 0;
-            }
-        }
-
-        double biasOutputDelta[numOutputs];
-
-        // initialize biasOutputDelta to 0
-        for (int j = 0; j < numOutputs; j++) {
-            biasOutputDelta[j] = 0;
-        }
-
-        double weightsInputToHiddenDelta[numInputs][numHidden];
-
-        // initialize weightsInputToHiddenDelta to 0
-        for (int j = 0; j < numInputs; j++) {
-            for (int k = 0; k < numHidden; k++) {
-                weightsInputToHiddenDelta[j][k] = 0;
-            }
-        }
-
-        double biasHiddenDelta[numHidden];
-
-        // initialize biasHiddenDelta to 0
-        for (int j = 0; j < numHidden; j++) {
-            biasHiddenDelta[j] = 0;
-        }
 
         double totalError = 0;
         for (int j = 0; j < totalTrainingData; j++) {
@@ -314,13 +282,6 @@ int main() {
 
             // ok! Now it's time for back propagation
 
-            // parital derivatives of each hidden to output as well as the error magnitude
-            double weightsHiddenToOutputsPartialDerivative[numHidden][numOutputs];
-            double weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude[numHidden][numOutputs];
-
-            double biasOutputPartialDerivative[numOutputs];
-            double biasOutputPartialDerivativeWithErrorMagnitude[numOutputs];
-
             for (int k = 0; k < numOutputs; k++) {
                 double errorRate = pow((correctTrainingOutputs[j][k] - computedOutputLayer[k]), 3);
 
@@ -332,104 +293,66 @@ int main() {
 
                 totalError += fabs(errorRate);
 
-                // get partial derivative for each hidden layer
+                // get partial derivative for this output with represent to each hidden input
                 for (int l = 0; l < numHidden; l++) {
-                    weightsHiddenToOutputsPartialDerivative[l][k] = sigmoidDerivative(weightsHiddenToOutputs[l][k]);
-                    printf("\t\tweightsHiddenToOutputsPartialDerivative (hiddenNum: %d, outputNum: %d): %f\n", l, k, weightsHiddenToOutputsPartialDerivative[l][k]);
-                    weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude[l][k] = weightsHiddenToOutputsPartialDerivative[l][k] * errorRate;
-                    printf("\t\tweightsHiddenToOutputsPartialDerivativeWithErrorMagnitude (hiddenNum: %d, outputNum: %d): %f\n", l, k, weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude[l][k]);
-                }
+                    printf("\t\t\thiddenNum: %d\n", l);
 
-                // get partial derivative for each bias output
-                biasOutputPartialDerivative[k] = sigmoidDerivative(biasOutput[k]);
-                biasOutputPartialDerivativeWithErrorMagnitude[k] = biasOutputPartialDerivative[k] * errorRate;
+                    printf("\t\t\tweightsHiddenToOutputs (hiddenNum: %d, outputNum: %d): %f\n", l, k, weightsHiddenToOutputs[l][k]);
+
+                    double weightsHiddenToOutputsPartialDerivative = sigmoidDerivative(weightsHiddenToOutputs[l][k]);
+                    printf("\t\t\tweightsHiddenToOutputsPartialDerivative (hiddenNum: %d, outputNum: %d): %f\n", l, k, weightsHiddenToOutputsPartialDerivative);
+                
+                    double weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude = weightsHiddenToOutputsPartialDerivative * errorRate;
+                    printf("\t\t\tweightsHiddenToOutputsPartialDerivativeWithErrorMagnitude (hiddenNum: %d, outputNum: %d): %f\n", l, k, weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude);
+                    printf("\n");
+
+                    // get partial derivative for this hidden output with represent to each input
+                    for(int m = 0; m < numInputs; m++) {
+                        printf("\t\t\t\tinputNum: %d\n", m);
+
+                        printf("\t\t\t\tweightsInputToHidden (inputNum: %d, hiddenNum: %d): %f\n", m, l, weightsInputToHidden[m][l]);
+
+                        double weightsInputToHiddenPartialDerivative = sigmoidDerivative(weightsInputToHidden[m][l]);
+                        printf("\t\t\t\tweightsInputToHiddenPartialDerivative (inputNum: %d, hiddenNum: %d): %f\n", m, l, weightsInputToHiddenPartialDerivative);
+
+                        double weightsInputToHiddenPartialDerivativeWithErrorMagnitude = weightsInputToHiddenPartialDerivative * weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude;
+                        printf("\t\t\t\tweightsInputToHiddenPartialDerivativeWithErrorMagnitude (inputNum: %d, hiddenNum: %d): %f\n", m, l, weightsInputToHiddenPartialDerivativeWithErrorMagnitude);
+                        printf("\n");
+
+                        // update weights input to hidden to reflect new derivative
+                        weightsInputToHidden[m][l] += weightsInputToHiddenPartialDerivativeWithErrorMagnitude;
+
+                        // get partial derivative for this hidden output with represent to each bias
+                        double biasHiddenPartialDerivative = sigmoidDerivative(biasHidden[l]);
+                        printf("\t\t\t\tbiasHiddenPartialDerivative (hiddenNum: %d): %f\n", l, biasHiddenPartialDerivative);
+
+                        double biasHiddenPartialDerivativeWithErrorMagnitude = biasHiddenPartialDerivative * weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude;
+                        printf("\t\t\t\tbiasHiddenPartialDerivativeWithErrorMagnitude (hiddenNum: %d): %f\n", l, biasHiddenPartialDerivativeWithErrorMagnitude);
+                        printf("\n");
+
+                        // update bias hidden to reflect new derivative
+                        biasHidden[l] += biasHiddenPartialDerivativeWithErrorMagnitude;
+                    }
+
+
+                    // update weights hidden to output to reflect new derivative
+                    weightsHiddenToOutputs[l][k] += weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude;
+
+                    // get partial derivative for this output with represent to each bias
+                    double biasOutputPartialDerivative = sigmoidDerivative(biasOutput[k]);
+                    printf("\t\t\tbiasOutputPartialDerivative (outputNum: %d): %f\n", k, biasOutputPartialDerivative);
+
+                    double biasOutputPartialDerivativeWithErrorMagnitude = biasOutputPartialDerivative * errorRate;
+                    printf("\t\t\tbiasOutputPartialDerivativeWithErrorMagnitude (outputNum: %d): %f\n", k, biasOutputPartialDerivativeWithErrorMagnitude);
+                    printf("\n");
+
+                    // update bias output to reflect new derivative
+                    biasOutput[k] += biasOutputPartialDerivativeWithErrorMagnitude;
+                }
 
                 printf("\n");
             }
 
-            // update delta weights for hidden to output
-            for (int k = 0; k < numHidden; k++) {
-                for (int l = 0; l < numOutputs; l++) {
-                    weightsHiddenToOutputsDelta[k][l] += learningRate * weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude[k][l];
-                }
-            }
-
-            // update delta bias output
-            for (int k = 0; k < numOutputs; k++) {
-                biasOutputDelta[k] += learningRate * biasOutputPartialDerivativeWithErrorMagnitude[k];
-            }
-
-            // parital derivatives of each input to hidden as well as the error magnitude
-            double weightsInputToHiddenPartialDerivative[numInputs][numHidden];
-            double weightsInputToHiddenPartialDerivativeWithErrorMagnitude[numInputs][numHidden];
-
-            double biasHiddenPartialDerivative[numHidden];
-            double biasHiddenPartialDerivativeWithErrorMagnitude[numHidden];
-
-            for (int k = 0; k < numHidden; k++) {
-                double errorRate = 0.0;
-
-                for (int l = 0; l < numOutputs; l++) {
-
-                    // printf("\t\t\tweightsHiddenToOutputsPartialDerivativeWithErrorMagnitude[%d][%d]: %f\n", k, l, weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude[k][l]);
-
-                    errorRate += weightsHiddenToOutputsPartialDerivativeWithErrorMagnitude[k][l];
-                }
-                // average error rate
-                errorRate /= numOutputs;
-
-                printf("\t\t\tweightsHiddenToOutputs[%d] ErrorRate %f\n\n", k, errorRate);
-
-                // get partial derivative for each input layer
-                for (int l = 0; l < numInputs; l++) {
-                    weightsInputToHiddenPartialDerivative[l][k] = sigmoidDerivative(weightsInputToHidden[l][k]);
-
-                    printf("\t\t\tweightsInputToHiddenPartialDerivative[%d][%d]: %f\n", l, k, weightsInputToHiddenPartialDerivative[l][k]);
-
-                    weightsInputToHiddenPartialDerivativeWithErrorMagnitude[l][k] = weightsInputToHiddenPartialDerivative[l][k] * errorRate;
-                }
-
-                // get partial derivative for each bias hidden
-                biasHiddenPartialDerivative[k] = sigmoidDerivative(biasHidden[k]);
-                biasHiddenPartialDerivativeWithErrorMagnitude[k] = biasHiddenPartialDerivative[k] * errorRate;
-            }
-
-            // update delta weights for input to hidden
-            for (int k = 0; k < numInputs; k++) {
-                for (int l = 0; l < numHidden; l++) {
-                    weightsInputToHiddenDelta[k][l] += learningRate * weightsInputToHiddenPartialDerivativeWithErrorMagnitude[k][l];
-                }
-            }
-
-            // update delta bias hidden
-            for (int k = 0; k < numHidden; k++) {
-                biasHiddenDelta[k] += learningRate * biasHiddenPartialDerivativeWithErrorMagnitude[k];
-            }
-
-        }
-
-        // update weights for hidden to output from delta weights
-        for (int j = 0; j < numHidden; j++) {
-            for (int k = 0; k < numOutputs; k++) {
-                weightsHiddenToOutputs[j][k] += weightsHiddenToOutputsDelta[j][k];
-            }
-        }
-
-        // update bias output from delta bias output
-        for (int j = 0; j < numOutputs; j++) {
-            biasOutput[j] += biasOutputDelta[j];
-        }
-
-        // update weights for input to hidden from delta weights
-        for (int j = 0; j < numInputs; j++) {
-            for (int k = 0; k < numHidden; k++) {
-                weightsInputToHidden[j][k] += weightsInputToHiddenDelta[j][k];
-            }
-        }
-
-        // update bias hidden from delta bias hidden
-        for (int j = 0; j < numHidden; j++) {
-            biasHidden[j] += biasHiddenDelta[j];
         }
 
         // print weights
