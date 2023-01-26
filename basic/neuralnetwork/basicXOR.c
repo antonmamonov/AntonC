@@ -243,8 +243,8 @@ int main() {
     printf("\n");
 
     // training step
-    int epoch = 10000;
-    double learningRate = 0.1;
+    int epoch = 0;
+    double learningRate = 0;
 
     printf("STEP_2: Begin training...\n");
     printf("---------------\n");
@@ -409,11 +409,17 @@ int main() {
         double max = 0;
         int maxIndex = 0;
         for (int j = 0; j < numOutputs; j++) {
+
+            printf("computedOutputNeuronOutput[%d] %f", j, computedOutputNeuronOutput[j]);
+
             if (computedOutputNeuronOutput[j] > max) {
                 max = computedOutputNeuronOutput[j];
                 maxIndex = j;
             }
         }
+
+        printf("\n");
+        printf("\tmaxIndex [%d] max [%f]\n", maxIndex, max);
 
         // print computed output
         printf("\tcomputed output: \n");
@@ -448,8 +454,16 @@ int main() {
         
         bool correct = false;
 
+    // double correctTrainingOutputs[totalTrainingData][numOutputs] = {
+    //     {1, 0},
+    //     {0, 1},
+    //     {0, 1},
+    //     {1, 0}
+    // };
+
         // check if predicted output is equal to correct output
         for (int j = 0; j < numOutputs; j++) {
+            printf("predictedOutput[%d] %f correctOutput[%d] %f\n", j, predictedOutput[j], j, correctOutput[j]);
             if (predictedOutput[j] == correctOutput[j]) {
                 correct = true;
             } else {
