@@ -13,6 +13,26 @@ double sigmoidDerivative(double x) {
     return sigmoid(x) * (1 - sigmoid(x));
 }
 
+double sigmoidWithAllValues(double x, double b, double c) {
+    return sigmoid(b + (c * x));
+}
+
+// partial derivative of sigmoid function wrt to x (ie, weight)
+//      b is the summed outputs of the other neurons
+//      c is the direct input
+double sigmoidDerivativeWRTX(double x, double b, double c) {
+    return (c * exp(b + (c * x)) ) / pow((1 + exp(b + (c * x))), 2);
+}
+
+// error rate function
+double errorRate(double a, double x) {
+    return 0.5 * pow((a - x), 2);
+}
+// derivative of error rate function wrt to x
+double errorRateDerivativeWRTX(double a, double x) {
+    return (x - a);
+}
+
 // given an error rate function of (correct - predicted) ^ 2
 // this is the partial derivative of the error rate wrt to the 'x' value inside a sigmoid function passed alongside the predicted value
 // Given this is a partial derivative: 
@@ -20,14 +40,14 @@ double sigmoidDerivative(double x) {
 //      b is the summed outputs of the other neurons
 //      c is the direct input
 double errorRateDerivativeWRTXInsideSigmoid(double x, double a, double b, double c) {
-    return ( (2 * c * exp(-c * x * -b )) * ( ( a * (1 + exp(-b - (c * x) ) ) ) - 1) ) / pow((1 + exp(-b - (c * x)) ), 3);
+    return -1 * (sigmoidWithAllValues(x, b, c) - a) * sigmoidDerivativeWRTX(x, b, c);
 }
 
 int main() {
     // neural network configuration
     static const int numInputs = 2;
     static const int numHidden = 2;
-    static const int numOutputs = 2;
+    static const int numOutputs = 1;
 
     // weights
     double hiddenWeightsForEachInputNeuron[numHidden][numInputs];
@@ -48,55 +68,49 @@ int main() {
     };
 
     double correctTrainingOutputs[totalTrainingData][numOutputs] = {
-        {1, 0},
-        {0, 1},
-        {0, 1},
-        {1, 0}
+        {0},
+        {1},
+        {1},
+        {0}
     };
 
     // initialize all values to zero instead of randomizing so the output is the same every time
-    // initialize hidden weights and bias to defaultWeights
+    // initialize hidden weights and bias to defaultWeights of positive value 
 
-    double defaultWeight1 = 0.420;
-    double defaultWeight2 = 0.69;
+    // initialize weights to - or + if i is even or odd
+    double defaultWeight = 0.420;
 
     for (int i = 0; i < numHidden; i++) {
 
-        // initialize to weights 1 or 2 i if i is even or odd
-        biasHidden[i] = i % 2 == 0 ? defaultWeight1 : defaultWeight2;
-
+        // initialize to + or - if i is even or odd
+        biasHidden[i] = i % 2 == 0 ? defaultWeight : -defaultWeight;
         for (int j = 0; j < numInputs; j++) {
-            hiddenWeightsForEachInputNeuron[j][i] = (j + i) % 2 == 0 ? defaultWeight1 : defaultWeight2;
+            hiddenWeightsForEachInputNeuron[i][j] = (j + i) % 2 == 0 ? defaultWeight : -defaultWeight;
         }
     }
 
     for (int i = 0; i < numOutputs; i++) {
 
-        // initialize to weights 1 or 2 i if i is even or odd
-        biasOutput[i] = i % 2 == 0 ? defaultWeight1 : defaultWeight2;
+        // initialize to + or - if i is even or odd
+        biasOutput[i] = i % 2 == 0 ? defaultWeight : -defaultWeight;
         for (int j = 0; j < numHidden; j++) {
-            outputWeightsForEachHiddenNeuron[j][i] = (j + i) % 2 == 0 ? defaultWeight1 : defaultWeight2;
+            outputWeightsForEachHiddenNeuron[i][j] = (j + i + 1) % 2 == 0 ? defaultWeight : -defaultWeight;
         }
     }
 
+
     // initialize hidden weights and bias to random values if you want...
-
     // for (int i = 0; i < numHidden; i++) {
-
-    //     // initialize to random values
-    //     biasHidden[i] = (double)rand() / RAND_MAX;
-
+    //     biasHidden[i] = (double)rand() / (double)RAND_MAX;
     //     for (int j = 0; j < numInputs; j++) {
-    //         hiddenWeightsForEachInputNeuron[j][i] = (double)rand() / RAND_MAX;
+    //         hiddenWeightsForEachInputNeuron[i][j] = (double)rand() / (double)RAND_MAX;
     //     }
     // }
 
     // for (int i = 0; i < numOutputs; i++) {
-
-    //     // initialize to random values
-    //     biasOutput[i] = (double)rand() / RAND_MAX;
+    //     biasOutput[i] = (double)rand() / (double)RAND_MAX;
     //     for (int j = 0; j < numHidden; j++) {
-    //         outputWeightsForEachHiddenNeuron[j][i] = (double)rand() / RAND_MAX;
+    //         outputWeightsForEachHiddenNeuron[i][j] = (double)rand() / (double)RAND_MAX;
     //     }
     // }
 
@@ -177,16 +191,6 @@ int main() {
             computedOutputNeuronOutput[j] = sigmoid(sum);
         }
 
-        // find max value in computedOutputNeuronOutput
-        double max = 0;
-        int maxIndex = 0;
-        for (int j = 0; j < numOutputs; j++) {
-            if (computedOutputNeuronOutput[j] > max) {
-                max = computedOutputNeuronOutput[j];
-                maxIndex = j;
-            }
-        }
-
         // print computed output
         printf("\tcomputed output: \n");
         for (int j = 0; j < numOutputs; j++) {
@@ -199,8 +203,8 @@ int main() {
         for (int j = 0; j < numOutputs; j++) {
             predictedOutput[j] = 0;
 
-            // if maxIndex is equal to j, set predictedOutput[j] to 1
-            if (maxIndex == j) {
+            // if computedOutputNeuronOutput is greater than 0.5, set predictedOutput to 1
+            if (computedOutputNeuronOutput[j] > 0.5) {
                 predictedOutput[j] = 1;
             }
         }
@@ -246,8 +250,10 @@ int main() {
     printf("\n");
 
     // training step
-    int epoch = 1000;
-    double learningRate = 0.01;
+    int epoch = 3;
+    double learningRate = 10;
+    double previousError = 0;
+    int batch = 4;
 
     printf("STEP_2: Begin training...\n");
     printf("---------------\n");
@@ -255,7 +261,45 @@ int main() {
     for (int i = 0; i < epoch; i++) {
 
         double totalError = 0;
+
+        double outputWeightsForEachHiddenNeuronGradient[numOutputs][numHidden];
+        double biasOutputGradient[numOutputs];
+        double hiddenWeightsForEachInputNeuronGradient[numHidden][numInputs];
+        double biasHiddenGradient[numHidden];
+
+        // initialize all gradients to zero
+        for (int k = 0; k < numOutputs; k++) {
+            for (int l = 0; l < numHidden; l++) {
+                outputWeightsForEachHiddenNeuronGradient[k][l] = 0;
+            }
+            biasOutputGradient[k] = 0;
+        }
+
+        for (int k = 0; k < numHidden; k++) {
+            for (int l = 0; l < numInputs; l++) {
+                 hiddenWeightsForEachInputNeuronGradient[k][l] = 0;
+             }
+             biasHiddenGradient[k] = 0;
+        }
+
+        // batch randomization
+        // int trainingDataIndexBatch[batch];
+
+        // // get random training data index
+        // for (int k = 0; k < batch; k++) {
+        //     trainingDataIndexBatch[k] = rand() % totalTrainingData;
+        // }
+
+        // // print trainingDataIndexBatch
+        // printf("trainingDataIndexBatch: \n");
+        // for (int k = 0; k < batch; k++) {
+        //     printf("\t%d: %d \n", k, trainingDataIndexBatch[k]);
+        // }
+
         for (int j = 0; j < totalTrainingData; j++) {
+
+            // int j = trainingDataIndexBatch[jb];
+
             printf("\n");
             printf("training data: %d\n", j);
             printf("\n");
@@ -268,17 +312,33 @@ int main() {
 
             // do forward propagation
 
+    // weights
+    // double hiddenWeightsForEachInputNeuron[numHidden][numInputs];
+    // double outputWeightsForEachHiddenNeuron[numOutputs][numHidden];
+
             // calculate hidden neuron output values
             double computedHiddenNeuronOutput[numHidden];
 
             for (int k = 0; k < numHidden; k++) {
                 double sum = 0;
                 for (int l = 0; l < numInputs; l++) {
-                    sum += trainingInputs[j][l] * hiddenWeightsForEachInputNeuron[k][l];
+                    double mul = trainingInputs[j][l] * hiddenWeightsForEachInputNeuron[k][l];
+                    printf("\t\tnumHidden[%d] input[%d] %f * %f = %f \n", k, l, trainingInputs[j][l], hiddenWeightsForEachInputNeuron[k][l], mul);
+                    sum += mul;
                 }
+                printf("\t\t%f + %f = %f \n", sum, biasHidden[k], sum + biasHidden[k]);
                 sum += biasHidden[k];
+                printf("\t\t%f = sigmoid(%f) \n", sigmoid(sum), sum);
                 computedHiddenNeuronOutput[k] = sigmoid(sum);
+                printf("\n");
             }
+
+            // print computed hidden neuron output
+            printf("computed hidden neuron output: \n");
+            for (int k = 0; k < numHidden; k++) {
+                printf("\t%d: %f \n", k, computedHiddenNeuronOutput[k]);
+            }
+            printf("\n");
 
             // calculate output neuron output values
             double computedOutputNeuronOutput[numOutputs];
@@ -286,33 +346,24 @@ int main() {
             for (int k = 0; k < numOutputs; k++) {
                 double sum = 0;
                 for (int l = 0; l < numHidden; l++) {
-                    sum += computedHiddenNeuronOutput[l] * outputWeightsForEachHiddenNeuron[k][l];
+                    double mul = computedHiddenNeuronOutput[l] * outputWeightsForEachHiddenNeuron[k][l];
+                    printf("\t\t outputWeightsForEachHiddenNeuron[%d][%d] %f \n", k, l, outputWeightsForEachHiddenNeuron[k][l]);
+                    printf("\t\t numOutputs[%d] numHidden[%d] %f * %f = %f \n", k, l, computedHiddenNeuronOutput[l], outputWeightsForEachHiddenNeuron[k][l], mul);
+                    sum += mul;
                 }
+                printf("\t\t%f + %f = %f \n", sum, biasOutput[k], sum + biasOutput[k]);
                 sum += biasOutput[k];
+                printf("\t\t%f = sigmoid(%f) \n", sigmoid(sum), sum);
                 computedOutputNeuronOutput[k] = sigmoid(sum);
             }
 
-            // ok! Now it's time for back propagation
-
-            double outputWeightsForEachHiddenNeuronGradient[numOutputs][numHidden];
-            double biasOutputGradient[numOutputs];
-            double hiddenWeightsForEachInputNeuronGradient[numHidden][numInputs];
-            double biasHiddenGradient[numHidden];
-
-            // initialize all gradients to zero
+            // print computed output neuron output
+            printf("computed output neuron output: \n");
             for (int k = 0; k < numOutputs; k++) {
-                for (int l = 0; l < numHidden; l++) {
-                    outputWeightsForEachHiddenNeuronGradient[k][l] = 0;
-                }
-                biasOutputGradient[k] = 0;
+                printf("\t%d: %f \n", k, computedOutputNeuronOutput[k]);
             }
 
-            for (int k = 0; k < numHidden; k++) {
-                for (int l = 0; l < numInputs; l++) {
-                    hiddenWeightsForEachInputNeuronGradient[k][l] = 0;
-                }
-                biasHiddenGradient[k] = 0;
-            }
+            // ok! Now it's time for back propagation
 
             // calculate error for each output neuron and update the gradient
             for (int k = 0; k < numOutputs; k++) {
@@ -320,23 +371,22 @@ int main() {
                 double deltaPredictedFromCorrect = (correctTrainingOutputs[j][k] - computedOutputNeuronOutput[k]);
 
                 // the cost/loss function as the cool kids call it... I prefer error rate
-                double errorRate = pow(deltaPredictedFromCorrect, 2);
+                double errorRateValue = errorRate(correctTrainingOutputs[j][k], computedOutputNeuronOutput[k]);
 
                 printf("\n");
                 printf("\t\toutputNum: %d\n", k);
 
                 printf("\t\tcorrectTrainingOutputs (outputNum: %d): %f\n", k, correctTrainingOutputs[j][k]);
                 printf("\t\tcomputedOutputNeuronOutput (outputNum: %d): %f\n", k, computedOutputNeuronOutput[k]);
-                printf("\t\terrorRate %f\n", errorRate);
+                printf("\t\terrorRateValue %f\n", errorRateValue);
 
-                totalError += errorRate;
+                totalError += errorRateValue;
 
                 // calculate partial derivative of the error rate with respect to the weight of each hidden neuron
                 for (int l = 0; l < numHidden; l++) {
                     printf("\n");
                     printf("\t\t\thiddenNum: %d\n", l);
                     printf("\t\t\toutputWeightsForThisHiddenNeuron (outputNum: %d, hiddenNum: %d): %f\n", k, l, outputWeightsForEachHiddenNeuron[k][l]);
-                    printf("\n");
                     double xParameter = outputWeightsForEachHiddenNeuron[k][l];
                     double aParameter = correctTrainingOutputs[j][k];
                     double bParameter = 0.0;
@@ -350,9 +400,9 @@ int main() {
                     bParameter += biasOutput[k];
                     
 
-                    double partialDerivativeErrorRateWrtHiddenNeuronWeight = learningRate * errorRateDerivativeWRTXInsideSigmoid(xParameter, aParameter, bParameter, cParameter);
+                    double partialDerivativeErrorRateWrtHiddenNeuronWeight = errorRateValue * learningRate * errorRateDerivativeWRTXInsideSigmoid(xParameter, aParameter, bParameter, cParameter);
                     printf("\t\t\tpartialDerivativeErrorRateWrtHiddenNeuronWeight %f \n", partialDerivativeErrorRateWrtHiddenNeuronWeight);
-                    printf("\t\t\t\t parameter a: %f parameter b: %f parameter c: %f\n", aParameter, bParameter, cParameter);
+                    printf("\t\t\t\t parameter a: %f parameter b: %f parameter c: %f\n\n", aParameter, bParameter, cParameter);
                     // update outputWeightsForEachHiddenNeuron with gradient
                     outputWeightsForEachHiddenNeuronGradient[k][l] += partialDerivativeErrorRateWrtHiddenNeuronWeight;
 
@@ -361,9 +411,7 @@ int main() {
                         printf("\n");
                         printf("\t\t\t\t\tinputNum: %d\n", m);
                         printf("\t\t\t\t\thiddenWeightsForThisInputNeuron (hiddenNum: %d, inputNum: %d): %f\n", l, m, hiddenWeightsForEachInputNeuron[l][m]);
-                        printf("\n");
                         double xParameter = hiddenWeightsForEachInputNeuron[l][m];
-                        double aParameter = correctTrainingOutputs[j][k];
                         double bParameter = 0.0;
                         double cParameter = trainingInputs[j][m];
 
@@ -372,10 +420,9 @@ int main() {
                                 bParameter += trainingInputs[j][mm] * hiddenWeightsForEachInputNeuron[l][mm];
                             }
                         }
-
-                        double partialDerivativeErrorRateWrtInputNeuronWeight = learningRate * errorRateDerivativeWRTXInsideSigmoid(xParameter, aParameter, bParameter, cParameter);
+                        double partialDerivativeErrorRateWrtInputNeuronWeight = partialDerivativeErrorRateWrtHiddenNeuronWeight * sigmoidDerivativeWRTX(xParameter, bParameter, cParameter);
                         printf("\t\t\t\t\tpartialDerivativeErrorRateWrtInputNeuronWeight %f \n", partialDerivativeErrorRateWrtInputNeuronWeight);
-                        printf("\t\t\t\t\t\t parameter a: %f parameter b: %f parameter c: %f\n", aParameter, bParameter, cParameter);
+                        printf("\t\t\t\t\t\t parameter b: %f parameter c: %f\n", bParameter, cParameter);
                         // update hiddenWeightsForEachInputNeuron with gradient
                         hiddenWeightsForEachInputNeuronGradient[l][m] += partialDerivativeErrorRateWrtInputNeuronWeight;
                     }
@@ -386,7 +433,6 @@ int main() {
                     printf("\t\t\t\tbiasHidden (hiddenNum: %d): %f\n", l, biasHidden[l]);
 
                     double xParameterBias = biasHidden[l];
-                    double aParameterBias = correctTrainingOutputs[j][k];
                     double bParameterBias = 0.0;
                     double cParameterBias = 1.0;
 
@@ -394,9 +440,9 @@ int main() {
                         bParameterBias += trainingInputs[j][m] * hiddenWeightsForEachInputNeuron[l][m];
                     }
 
-                    double partialDerivativeErrorRateWrtBiasHidden = learningRate * errorRateDerivativeWRTXInsideSigmoid(xParameterBias, aParameterBias, bParameterBias, cParameterBias);
+                    double partialDerivativeErrorRateWrtBiasHidden = partialDerivativeErrorRateWrtHiddenNeuronWeight * sigmoidDerivativeWRTX(xParameterBias, bParameterBias, cParameterBias);
                     printf("\t\t\t\tpartialDerivativeErrorRateWrtBiasHidden %f \n", partialDerivativeErrorRateWrtBiasHidden);
-                    printf("\t\t\t\t\t parameter a: %f parameter b: %f parameter c: %f\n", aParameterBias, bParameterBias, cParameterBias);
+                    printf("\t\t\t\t\t parameter b: %f parameter c: %f\n", bParameterBias, cParameterBias);
                     // update biasHidden with gradient
                     biasHiddenGradient[l] += partialDerivativeErrorRateWrtBiasHidden;
                 }
@@ -415,38 +461,73 @@ int main() {
                     bParameter += computedHiddenNeuronOutput[l] * outputWeightsForEachHiddenNeuron[k][l];
                 }
 
-                double partialDerivativeErrorRateWrtBiasOutput = learningRate * errorRateDerivativeWRTXInsideSigmoid(xParameter, aParameter, bParameter, cParameter);
+                double partialDerivativeErrorRateWrtBiasOutput = errorRateValue * learningRate * errorRateDerivativeWRTXInsideSigmoid(xParameter, aParameter, bParameter, cParameter);
                 printf("\t\tpartialDerivativeErrorRateWrtBiasOutput %f \n", partialDerivativeErrorRateWrtBiasOutput);
                 printf("\t\t\t parameter a: %f parameter b: %f parameter c: %f\n", aParameter, bParameter, cParameter);
                 // update biasOutput with gradient
                 biasOutputGradient[k] += partialDerivativeErrorRateWrtBiasOutput;
             }
-
-            printf("\n");
-
-            // update weights and biases
-            for (int k = 0; k < numOutputs; k++) {
-                for (int l = 0; l < numHidden; l++) {
-                    printf("\toutputWeightsForEachHiddenNeuronGradient (outputNum: %d, hiddenNum: %d): %f\n", k, l, outputWeightsForEachHiddenNeuronGradient[k][l]);
-                    outputWeightsForEachHiddenNeuron[k][l] += outputWeightsForEachHiddenNeuronGradient[k][l];
-                }
-                printf("\tbiasOutputGradient (outputNum: %d): %f\n", k, biasOutputGradient[k]);
-                biasOutput[k] += biasOutputGradient[k];
-            }
-            printf("\n");
-
-            for (int k = 0; k < numHidden; k++) {
-                for (int l = 0; l < numInputs; l++) {
-                    printf("\thiddenWeightsForEachInputNeuronGradient (inputNum: %d, hiddenNum: %d): %f\n", l, k, hiddenWeightsForEachInputNeuronGradient[k][l]);
-                    hiddenWeightsForEachInputNeuron[k][l] += hiddenWeightsForEachInputNeuronGradient[k][l];
-                }
-                printf("\tbiasHiddenGradient (hiddenNum: %d): %f\n", k, biasHiddenGradient[k]);
-                biasHidden[k] += biasHiddenGradient[k];
-            }
         }
 
         printf("\n");
-        printf("epoch: %d errorRate: %f\n", i, totalError);
+
+        // update weights and biases
+        for (int k = 0; k < numOutputs; k++) {
+            for (int l = 0; l < numHidden; l++) {
+                printf("\toutputWeightsForEachHiddenNeuronGradient (outputNum: %d, hiddenNum: %d): %f\n", k, l, outputWeightsForEachHiddenNeuronGradient[k][l]);
+                outputWeightsForEachHiddenNeuron[k][l] += outputWeightsForEachHiddenNeuronGradient[k][l];
+            }
+            printf("\tbiasOutputGradient (outputNum: %d): %f\n", k, biasOutputGradient[k]);
+            biasOutput[k] += biasOutputGradient[k];
+        }
+        printf("\n");
+
+        for (int k = 0; k < numHidden; k++) {
+            for (int l = 0; l < numInputs; l++) {
+                printf("\thiddenWeightsForEachInputNeuronGradient (inputNum: %d, hiddenNum: %d): %f\n", l, k, hiddenWeightsForEachInputNeuronGradient[k][l]);
+                hiddenWeightsForEachInputNeuron[k][l] += hiddenWeightsForEachInputNeuronGradient[k][l];
+            }
+            printf("\tbiasHiddenGradient (hiddenNum: %d): %f\n", k, biasHiddenGradient[k]);
+            biasHidden[k] += biasHiddenGradient[k];
+        }
+
+        // // decrease learning rate if error is not decreasing
+        // if (i > 0 && totalError >= (previousError - 0.001)) {
+        //     printf("decrease learning rate\n");
+        //     learningRate = learningRate / 2;
+        // }
+
+        printf("\n");
+        printf("epoch: %d learningRate: %f previousError: %.10f errorRate: %.10f\n", i, learningRate, previousError, totalError);
+
+        previousError = totalError;
+    }
+
+    printf("---------------\n");
+    printf("hiddenWeightsForEachInputNeuron: \n");
+    for (int i = 0; i < numInputs; i++) {
+        for (int j = 0; j < numHidden; j++) {
+            printf("\t [%d][%d] %f ", i, j, hiddenWeightsForEachInputNeuron[i][j]);
+        }
+        printf("\n");
+    }
+
+    // print bias
+    printf("---------------\n");
+    printf("biasHidden: \n");
+    for (int i = 0; i < numHidden; i++) {
+        printf("\t biasHidden[%d] %f ", i, biasHidden[i]);
+    }
+    printf("\n");
+    printf("\n");
+
+    printf("---------------\n");
+    printf("outputWeightsForEachHiddenNeuron: \n");
+    for (int i = 0; i < numHidden; i++) {
+        for (int j = 0; j < numOutputs; j++) {
+            printf("\t [%d][%d] %f ", i, j, outputWeightsForEachHiddenNeuron[i][j]);
+        }
+        printf("\n");
     }
 
     // simple forward propagation after training
@@ -487,19 +568,6 @@ int main() {
             computedOutputNeuronOutput[j] = sigmoid(sum);
         }
 
-        // find max value in computedOutputNeuronOutput
-        double max = 0;
-        int maxIndex = 0;
-        for (int j = 0; j < numOutputs; j++) {
-
-            // printf("computedOutputNeuronOutput[%d] %f", j, computedOutputNeuronOutput[j]);
-
-            if (computedOutputNeuronOutput[j] > max) {
-                max = computedOutputNeuronOutput[j];
-                maxIndex = j;
-            }
-        }
-
         // print computed output
         printf("\tcomputed output: \n");
         for (int j = 0; j < numOutputs; j++) {
@@ -512,8 +580,8 @@ int main() {
         for (int j = 0; j < numOutputs; j++) {
             predictedOutput[j] = 0;
 
-            // if maxIndex is equal to j, set predictedOutput[j] to 1
-            if (maxIndex == j) {
+            // if computedOutputNeuronOutput is greater than 0.5, set predictedOutput to 1
+            if (computedOutputNeuronOutput[j] > 0.5) {
                 predictedOutput[j] = 1;
             }
         }
