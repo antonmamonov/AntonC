@@ -28,11 +28,11 @@ Partial Derivative of error rate with respect to x
 
 <img src='images/partialDwrtX.png'>
 
-Sigmoid activation with weight (x) given bias (b) and direct input (c)
+Sigmoid activation with weight (x) given sibling neuron outputs + bias (b) and direct input (c)
 
 <img src='images/sigmoidWithBiasAndInputWeight.png'>
 
-Partial Derivative of sigmoid activation with respect to weight (x) given bias (b) and direct input (c)
+Partial Derivative of sigmoid activation with respect to weight (x) given sibling neuron outputs + bias (b) and direct input (c)
 
 <img src='images/partialDwrtXsigmoidWithBiasAndInputWeight.png'>
 
