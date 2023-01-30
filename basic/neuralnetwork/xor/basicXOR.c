@@ -74,6 +74,19 @@ int main() {
         {0}
     };
 
+    // logging
+    char logFileName[] = "errorRateLog.csv";
+
+    // delete log file if it exists
+    FILE *logFile = fopen(logFileName, "w");
+    fclose(logFile);
+
+    // open log file to append csv data
+    logFile = fopen(logFileName, "a");
+
+    // write header to log file 
+    fprintf(logFile, "epoch, errorRate\n");
+
     // initialize all values to zero instead of randomizing so the output is the same every time
     // initialize hidden weights and bias to defaultWeights of positive value 
 
@@ -250,7 +263,7 @@ int main() {
     printf("\n");
 
     // training step
-    int epoch = 3;
+    int epoch = 1000;
     double learningRate = 10;
     double previousError = 0;
     int batch = 4;
@@ -501,6 +514,9 @@ int main() {
         printf("epoch: %d learningRate: %f previousError: %.10f errorRate: %.10f\n", i, learningRate, previousError, totalError);
 
         previousError = totalError;
+
+        // write error rate to file
+        fprintf(logFile, "%d,%f,\n", i, totalError);
     }
 
     printf("---------------\n");

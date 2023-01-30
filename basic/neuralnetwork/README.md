@@ -1,8 +1,3 @@
-# Neural Network in C
+# Basic Neural Network
 
-## Basic XOR (ie, "Hello World" of neural networks) work in progress
-
-```console
-$ gcc basicXOR.c && ./a.out
-```
-
+1. [Basic XOR Neural Network](xor/README.md)
