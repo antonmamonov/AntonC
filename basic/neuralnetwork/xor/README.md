@@ -10,9 +10,9 @@ $ gcc basicXOR.c && ./a.out
 
 <img src='images/errorRateVsEpoch.png'/>
 
-Error Rate - Horizontal/Y Axis
+Error Rate - Vertical/Y Axis
 
-Epoch step - Vertical/X Axis
+Epoch step - Horizontal/X Axis
 
 ## Theoretical Intuition
 
