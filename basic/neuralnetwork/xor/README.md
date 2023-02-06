@@ -6,6 +6,8 @@
 $ gcc basicXOR.c && ./a.out
 ```
 
+<img src='images/xor_model.png'/>
+
 ## Training
 
 <img src='images/errorRateVsEpoch.png'/>
