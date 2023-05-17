@@ -3,7 +3,7 @@
 ## Basic XOR (ie, "Hello World" of neural networks)
 
 ```console
-$ gcc basicXOR.c && ./a.out
+gcc basicXOR.c && ./a.out
 ```
 
 <img src='images/xor_model.png'/>
