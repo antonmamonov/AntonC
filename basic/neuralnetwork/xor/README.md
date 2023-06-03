@@ -1,6 +1,6 @@
 # Neural Network in C
 
-## Basic XOR (ie, "Hello World" of neural networks)
+## Quick-run Basic XOR (ie, "Hello World" of neural networks)
 
 ```console
 gcc basicXOR.c && ./a.out

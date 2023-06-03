@@ -9,3 +9,4 @@
 1. [OG Book](docs/ogBook.pdf)
 1. [Basic x86 Assembly](basic/x86assembly/README.md)
 2. [Basic Neural Network](basic/neuralnetwork/xor/README.md)
+2. [Basic Word2vec Text Encoding](basic/encoding/word2vec/README.md)
